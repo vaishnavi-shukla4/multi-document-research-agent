@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = https://multi-document-research-agent-qkvk.onrender.com/;
 
 export async function uploadDocuments(files) {
   const formData = new FormData();
