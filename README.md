@@ -1,130 +1,135 @@
-# 🔬 Multi-Document Research Agent
+# Multi-Document Research Agent
 
-> AI-powered cross-document analysis that compares research papers, detects contradictions, and provides explainable, citation-backed insights.
+An AI-powered full-stack web application for deep cross-document analysis of research papers — featuring Q&A, contradiction detection, trend summarization, and document comparison with citation tracking and confidence scoring.
 
-## ✨ Features
+🔗 **[Live Demo]([https://your-vercel-url.vercel.app](https://multi-document-research-agent-two.vercel.app/))** &nbsp;|&nbsp;
 
-- **Multi-Document Upload** — Upload multiple PDFs at once
-- **Deep Q&A** — Ask questions answered using context from ALL documents
-- **Cross-Document Comparison** — Compare key ideas, similarities & differences
-- **Contradiction Detection** — Find conflicting statements between papers
-- **Trend Summarization** — Identify common themes across all documents
-- **Citation Tracking** — Every answer includes document name, page number, exact snippet
-- **Explainable AI** — "Why this answer?" section with extracted evidence
-- **Confidence Score** — Visual indicator of answer reliability
-- **Simple/Detailed Toggle** — Switch between summary and in-depth analysis
+---
 
-## 🛠️ Tech Stack
+## Features
+
+- 📄 **Multi-PDF Upload** — Upload and manage multiple research papers simultaneously
+- 🔍 **Cross-Document Q&A** — Ask questions across all uploaded documents with page-level citations
+- ⚖️ **Contradiction Detection** — Automatically identifies conflicting statements between papers
+- 📊 **Trend Summarization** — Surfaces common themes and patterns across documents
+- 🔄 **Document Comparison** — Side-by-side analysis of key ideas across sources
+- 🎯 **Confidence Scoring** — Every answer includes a confidence score and reasoning
+- 📌 **Citation Tracking** — Responses reference exact document, page number, and snippet
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | React + Vite |
+|---|---|
+| Frontend | React 19 + Vite |
 | Backend | Python + FastAPI |
-| AI/LLM | OpenAI GPT-4o-mini |
-| Embeddings | OpenAI text-embedding-3-small |
-| Vector DB | FAISS (in-memory) |
+| LLM | Groq — LLaMA 3.3 70B |
+| Embeddings | Google Gemini (`gemini-embedding-001`, 1536-dim) |
+| Vector Search | NumPy (in-memory cosine similarity) |
+| PDF Parsing | PyPDF2 |
+| Deployment | Vercel (frontend) + Render (backend) |
 
-## 📁 Project Structure
+---
+
+## Architecture
 
 ```
-├── backend/
-│   ├── main.py           # FastAPI app & endpoints
-│   ├── pdf_utils.py      # PDF text extraction
-│   ├── chunker.py        # Text chunking
-│   ├── vector_store.py   # FAISS index management
-│   ├── ai_engine.py      # OpenAI reasoning engine
-│   ├── requirements.txt  # Python dependencies
-│   └── .env              # API key (create this)
-├── frontend/
-│   └── src/
-│       ├── App.jsx        # Main app component
-│       ├── api.js         # API client
-│       ├── index.css      # Design system
-│       └── components/
-│           ├── Sidebar.jsx
-│           ├── QueryPanel.jsx
-│           └── CitationPanel.jsx
-└── README.md
+PDF Upload
+    ↓
+pdf_utils.py     →  page-by-page text extraction
+    ↓
+chunker.py       →  sentence-aware chunks (800 chars, 200 overlap)
+    ↓
+vector_store.py  →  Gemini embeddings → normalized NumPy float32 vectors
+    ↓
+User Query
+    ↓
+vector_store.py  →  embed query → cosine similarity → top-k chunks
+    ↓
+ai_engine.py     →  build prompt → Groq LLaMA 3.3 70B → structured JSON
+    ↓
+Frontend         →  renders answer + citations + confidence score
 ```
 
-## 🚀 Setup Instructions
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js** 18+ (for frontend)
-- **Python** 3.9+ (for backend)
-- **OpenAI API key** ([Get one here](https://platform.openai.com/api-keys))
+- Python 3.9+
+- Node.js 18+
+- [Groq API Key](https://console.groq.com/)
+- [Google Gemini API Key](https://aistudio.google.com/)
 
-### 1. Backend Setup
+### Backend
 
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS/Linux
-
-# Install dependencies
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
 
-# Configure API key
-# Edit .env file and replace sk-your-api-key-here with your actual key
-notepad .env
+Create a `.env` file in `/backend`:
 
-# Start the server
+```env
+GROQ_API_KEY=your_groq_api_key
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+```bash
 uvicorn main:app --reload --port 8000
 ```
 
-The API will be available at `http://localhost:8000`
-
-### 2. Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies (already done if you used create-vite)
 npm install
-
-# Start dev server
-npm run dev
+npm run dev   # → http://localhost:5173
 ```
 
-The app will be available at `http://localhost:5173`
+---
 
-### 3. Use the App
-
-1. Open `http://localhost:5173` in your browser
-2. Click **"+ Upload PDFs"** in the left sidebar
-3. Select one or more PDF files
-4. Once uploaded, you can:
-   - **Ask questions** using the center input
-   - Click **"Compare Documents"** for cross-document analysis
-   - Click **"Find Contradictions"** for conflict detection
-   - Click **"Summarize Trends"** for theme identification
-5. Citations appear in the right panel
-
-## 📄 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/upload` | Upload PDF files |
-| GET | `/documents` | List uploaded documents |
-| DELETE | `/documents/{name}` | Remove a document |
-| POST | `/query` | Ask a question |
-| POST | `/compare` | Compare all documents |
-| POST | `/contradictions` | Detect contradictions |
-| POST | `/trends` | Summarize trends |
+|---|---|---|
+| `GET` | `/` | Health check |
+| `POST` | `/upload` | Upload PDF(s); extract, chunk, and embed |
+| `GET` | `/documents` | List all uploaded documents |
+| `DELETE` | `/documents/{doc_name}` | Remove a document and rebuild index |
+| `POST` | `/query` | Q&A with citations and confidence score |
+| `POST` | `/compare` | Cross-document comparison |
+| `POST` | `/contradictions` | Detect conflicting statements |
+| `POST` | `/trends` | Identify common themes |
 
-## 💡 Tips
+### Query Response Schema
 
-- Upload **2+ documents** to enable comparison and contradiction features
-- Use the **Simple/Detailed toggle** to control answer depth
-- Check the **"Why this answer?"** dropdown for reasoning transparency
-- The **confidence score** helps evaluate answer reliability
+```json
+{
+  "answer": "...",
+  "confidence_score": 0.85,
+  "why_this_answer": "...",
+  "citations": [
+    { "doc_name": "paper.pdf", "page_number": 3, "snippet": "..." }
+  ]
+}
+```
 
-## ⚠️ Notes
+---
 
-- FAISS index is **in-memory** — restarting the backend clears all data
-- Each upload embeds text using OpenAI API (costs ~$0.001 per document)
-- GPT-4o-mini is used for reasoning (~$0.01 per query)
+## Known Limitations
+
+- **No persistence** — Restarting the backend clears all uploaded documents (in-memory only)
+- **Scanned PDFs** — PyPDF2 extracts digital text only; scanned/image PDFs are not supported
+- **Rate limits** — Gemini free tier requires a 4-second delay between embedding batches
+- **No auth** — CORS is open; not production-hardened
+
+---
+
+## License
+
+MIT
