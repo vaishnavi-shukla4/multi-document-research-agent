@@ -7,6 +7,7 @@ export default function Sidebar({
   onCompare,
   onContradictions,
   onTrends,
+  onLogout,
   uploading,
   loading,
 }) {
@@ -88,6 +89,14 @@ export default function Sidebar({
           disabled={documents.length < 1 || loading}
         >
           <span className="icon">📊</span> Summarize Trends
+        </button>
+
+        <button
+          className="action-btn logout"
+          onClick={onLogout}
+          id="logout-btn"
+        >
+          <span className="icon">↩</span> Log out
         </button>
       </div>
     </aside>
