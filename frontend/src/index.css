@@ -17,8 +17,8 @@
 
   /* Typography */
   --text-primary:   #25344F;          /* Space Cadet */
-  --text-secondary: #617891;          /* Slate Gray */
-  --text-muted:     #9AABB8;
+  --text-secondary: #42526E;          /* Darker Slate Gray */
+  --text-muted:     #5E6C84;          /* Darker Muted */
   --text-on-accent: #F6EEE3;
 
   /* Accent — Space Cadet primary */
