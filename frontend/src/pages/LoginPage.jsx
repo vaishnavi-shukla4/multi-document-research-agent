@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function LoginPage() {
   const [tab, setTab] = useState("login"); // "login" | "signup"
@@ -16,14 +17,11 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
-
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-
     if (error) {
       setError(error.message);
     } else {
-      // onAuthStateChange in App.jsx will update session → <Navigate to="/app" />
       navigate("/app", { replace: true });
     }
   };
@@ -33,52 +31,61 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     setMessage(null);
-
     const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
-
     if (error) {
       setError(error.message);
     } else if (data.session) {
-      // Email confirmation disabled — logged in immediately
       navigate("/app", { replace: true });
     } else {
-      // Email confirmation enabled — prompt user to check inbox
       setMessage("Account created! Check your email to confirm, then log in.");
     }
   };
 
   const handleSubmit = tab === "login" ? handleLogin : handleSignUp;
 
+  const switchTab = (t) => {
+    setTab(t);
+    setError(null);
+    setMessage(null);
+  };
+
   return (
     <div className="login-page">
-      {/* Background blobs */}
-      <div className="hero-blob hero-blob-1" aria-hidden="true" />
-      <div className="hero-blob hero-blob-2" aria-hidden="true" />
+      <div className="login-top-bar">
+        <Link to="/" className="login-back-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </Link>
+        <ThemeToggle />
+      </div>
 
       <div className="login-card">
         {/* Logo */}
-        <Link to="/" className="login-logo">
-          <span className="landing-logo-icon">🔬</span>
-          <span className="landing-logo-text">ResearchAgent</span>
-        </Link>
+        <div className="login-logo">
+          <div className="login-brand-mark">R</div>
+          <span className="login-brand-name">ResearchAgent</span>
+        </div>
 
         <h1 className="login-title">
-          {tab === "login" ? "Welcome back" : "Create account"}
+          {tab === "login" ? "Welcome back" : "Create your account"}
         </h1>
         <p className="login-subtitle">
           {tab === "login"
-            ? "Sign in to access your documents"
-            : "Get started for free — no credit card needed"}
+            ? "Sign in to access your documents and research."
+            : "Free to start. No credit card required."}
         </p>
 
         {/* Tab Toggle */}
-        <div className="login-tabs" role="tablist">
+        <div className="login-tabs" role="tablist" aria-label="Authentication mode">
           <button
             role="tab"
             aria-selected={tab === "login"}
             className={`login-tab ${tab === "login" ? "active" : ""}`}
-            onClick={() => { setTab("login"); setError(null); setMessage(null); }}
+            onClick={() => switchTab("login")}
             type="button"
           >
             Log in
@@ -87,7 +94,7 @@ export default function LoginPage() {
             role="tab"
             aria-selected={tab === "signup"}
             className={`login-tab ${tab === "signup" ? "active" : ""}`}
-            onClick={() => { setTab("signup"); setError(null); setMessage(null); }}
+            onClick={() => switchTab("signup")}
             type="button"
           >
             Sign up
@@ -133,12 +140,22 @@ export default function LoginPage() {
 
           {error && (
             <div className="login-alert login-alert-error" role="alert">
-              ⚠️ {error}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {error}
             </div>
           )}
           {message && (
             <div className="login-alert login-alert-success" role="status">
-              ✅ {message}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              {message}
             </div>
           )}
 
@@ -160,22 +177,14 @@ export default function LoginPage() {
           {tab === "login" ? (
             <>
               Don&apos;t have an account?{" "}
-              <button
-                className="login-switch-link"
-                onClick={() => { setTab("signup"); setError(null); setMessage(null); }}
-                type="button"
-              >
+              <button className="login-switch-link" onClick={() => switchTab("signup")} type="button">
                 Sign up
               </button>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <button
-                className="login-switch-link"
-                onClick={() => { setTab("login"); setError(null); setMessage(null); }}
-                type="button"
-              >
+              <button className="login-switch-link" onClick={() => switchTab("login")} type="button">
                 Log in
               </button>
             </>

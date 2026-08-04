@@ -1,7 +1,7 @@
 /**
  * ProtectedApp — the full research agent UI.
- * Original App.jsx logic moved here so App.jsx can be a thin routing shell.
- * The only addition is the onLogout prop wired to the Sidebar logout button.
+ * Original logic preserved exactly. Only layout/structure updated.
+ * The app-header has been removed — identity lives in the Sidebar.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -27,6 +27,7 @@ export default function ProtectedApp({ onLogout }) {
   const [citations, setCitations] = useState([]);
   const [error, setError] = useState(null);
   const [detailMode, setDetailMode] = useState("detailed");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchDocs = useCallback(async () => {
     try {
@@ -67,6 +68,7 @@ export default function ProtectedApp({ onLogout }) {
     setResponse(null);
     setResponseType("query");
     setCitations([]);
+    setSidebarOpen(false);
     try {
       const data = await queryDocuments(question, detailMode);
       setResponse(data);
@@ -84,6 +86,7 @@ export default function ProtectedApp({ onLogout }) {
     setResponse(null);
     setResponseType("compare");
     setCitations([]);
+    setSidebarOpen(false);
     try {
       const data = await compareDocuments();
       setResponse(data);
@@ -101,6 +104,7 @@ export default function ProtectedApp({ onLogout }) {
     setResponse(null);
     setResponseType("contradictions");
     setCitations([]);
+    setSidebarOpen(false);
     try {
       const data = await findContradictions();
       setResponse(data);
@@ -123,6 +127,7 @@ export default function ProtectedApp({ onLogout }) {
     setResponse(null);
     setResponseType("trends");
     setCitations([]);
+    setSidebarOpen(false);
     try {
       const data = await summarizeTrends();
       setResponse(data);
@@ -140,35 +145,59 @@ export default function ProtectedApp({ onLogout }) {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div>
-          <h1>🔬 Multi-Document Research Agent</h1>
-          <span className="subtitle">AI-powered cross-document analysis with citation tracking</span>
-        </div>
-      </header>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-      <div className="app-body">
-        <Sidebar
-          documents={documents}
-          onUpload={handleUpload}
-          onRemove={handleRemove}
-          onCompare={handleCompare}
-          onContradictions={handleContradictions}
-          onTrends={handleTrends}
-          onLogout={onLogout}
-          uploading={uploading}
-          loading={loading}
-        />
-        <QueryPanel
-          response={response}
-          responseType={responseType}
-          loading={loading}
-          error={error}
-          onSubmitQuery={handleQuery}
-          detailMode={detailMode}
-          onToggleMode={toggleMode}
-        />
-        <CitationPanel citations={citations} />
+      <Sidebar
+        documents={documents}
+        onUpload={handleUpload}
+        onRemove={handleRemove}
+        onCompare={handleCompare}
+        onContradictions={handleContradictions}
+        onTrends={handleTrends}
+        onLogout={onLogout}
+        uploading={uploading}
+        loading={loading}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <div className="app-content">
+        {/* Mobile top bar */}
+        <div className="mobile-topbar">
+          <button
+            className="mobile-menu-btn"
+            onClick={() => setSidebarOpen(o => !o)}
+            aria-label="Toggle sidebar"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <span className="mobile-topbar-title">ResearchAgent</span>
+        </div>
+
+        <div className="app-body">
+          <QueryPanel
+            response={response}
+            responseType={responseType}
+            loading={loading}
+            error={error}
+            onSubmitQuery={handleQuery}
+            detailMode={detailMode}
+            onToggleMode={toggleMode}
+            hasDocuments={documents.length > 0}
+          />
+          <CitationPanel citations={citations} />
+        </div>
       </div>
     </div>
   );
