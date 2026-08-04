@@ -1,6 +1,20 @@
-<<<<<<< HEAD
-=======
-const API_BASE = "https://multi-document-research-agent-qkvk.onrender.com";
+import { supabase } from "./supabaseClient";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+/**
+ * Builds the Authorization header from the current Supabase session.
+ * Throws if the user is not authenticated — callers should catch and redirect to /login.
+ */
+async function authHeader() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+  return { Authorization: `Bearer ${session.access_token}` };
+}
 
 export async function uploadDocuments(files) {
   const formData = new FormData();
@@ -9,6 +23,7 @@ export async function uploadDocuments(files) {
   }
   const res = await fetch(`${API_BASE}/upload`, {
     method: "POST",
+    headers: { ...(await authHeader()) },
     body: formData,
   });
   if (!res.ok) {
@@ -19,21 +34,27 @@ export async function uploadDocuments(files) {
 }
 
 export async function getDocuments() {
-  const res = await fetch(`${API_BASE}/documents`);
+  const res = await fetch(`${API_BASE}/documents`, {
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
   return res.json();
 }
 
 export async function deleteDocument(docName) {
-  const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(docName)}`, {
-    method: "DELETE",
-  });
+  const res = await fetch(
+    `${API_BASE}/documents/${encodeURIComponent(docName)}`,
+    {
+      method: "DELETE",
+      headers: { ...(await authHeader()) },
+    }
+  );
   return res.json();
 }
 
 export async function queryDocuments(question, detailMode = "detailed", topK = 10) {
   const res = await fetch(`${API_BASE}/query`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify({ question, detail_mode: detailMode, top_k: topK }),
   });
   if (!res.ok) {
@@ -44,7 +65,10 @@ export async function queryDocuments(question, detailMode = "detailed", topK = 1
 }
 
 export async function compareDocuments() {
-  const res = await fetch(`${API_BASE}/compare`, { method: "POST" });
+  const res = await fetch(`${API_BASE}/compare`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.detail || "Compare failed");
@@ -53,7 +77,10 @@ export async function compareDocuments() {
 }
 
 export async function findContradictions() {
-  const res = await fetch(`${API_BASE}/contradictions`, { method: "POST" });
+  const res = await fetch(`${API_BASE}/contradictions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.detail || "Contradictions check failed");
@@ -62,11 +89,13 @@ export async function findContradictions() {
 }
 
 export async function summarizeTrends() {
-  const res = await fetch(`${API_BASE}/trends`, { method: "POST" });
+  const res = await fetch(`${API_BASE}/trends`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.detail || "Trends summarization failed");
   }
   return res.json();
 }
->>>>>>> b5ac3754ffdfbe0bc03ee0c7c9a012268d575bf2
