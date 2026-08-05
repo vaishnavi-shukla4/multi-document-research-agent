@@ -1265,6 +1265,12 @@ h1, h2, h3, h4 {
   flex-direction: column;
   padding: 14px 12px;
   border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.sidebar-section.drag-active {
+  background-color: var(--accent-surface);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius);
 }
 .sidebar-section-header {
   display: flex;
@@ -1310,11 +1316,14 @@ h1, h2, h3, h4 {
   padding: 7px 8px;
   border-radius: var(--radius);
   cursor: default;
-  transition: var(--transition);
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
   margin-bottom: 1px;
   group: true;
 }
-.doc-item:hover { background: var(--bg-hover); }
+.doc-item:hover { 
+  background: var(--bg-hover);
+  transform: translateX(3px);
+}
 .doc-icon {
   width: 28px;
   height: 28px;
@@ -1382,12 +1391,16 @@ h1, h2, h3, h4 {
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 .upload-btn:hover {
   border-color: var(--accent-border);
   background: var(--accent-surface);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.upload-btn:active {
+  transform: translateY(0);
 }
 .upload-btn:focus-visible {
   outline: none;
@@ -1643,7 +1656,7 @@ h1, h2, h3, h4 {
 .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dot-pulse {
   0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1); }
+  40% { opacity: 1; transform: scale(1.1); background-color: var(--accent); }
 }
 .loading-text {
   font-size: 0.85rem;
@@ -1681,6 +1694,11 @@ h1, h2, h3, h4 {
   border-radius: var(--radius-lg);
   padding: 24px;
   animation: fade-up 0.25s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.response-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(8px); }
@@ -1791,8 +1809,16 @@ h1, h2, h3, h4 {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   font-size: 0.79rem;
+  cursor: default;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
-.topic-doc-name { font-weight: 600; color: var(--accent-light); margin-bottom: 2px; }
+.topic-doc:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-border);
+  transform: translateX(2px);
+}
+.topic-doc-name { font-weight: 600; color: var(--accent-light); margin-bottom: 2px; transition: color 0.2s ease; }
+.topic-doc:hover .topic-doc-name { color: var(--accent); }
 .topic-doc-pos { color: var(--text-secondary); font-size: 0.76rem; }
 
 .sim-diff-section { margin-top: 16px; }
@@ -1871,7 +1897,14 @@ h1, h2, h3, h4 {
 }
 .statement-label.a { color: var(--accent-light); }
 .statement-label.b { color: var(--warning); }
-.statement-doc { font-size: 0.71rem; color: var(--text-muted); margin-bottom: 6px; }
+.statement-doc { 
+  font-size: 0.71rem; 
+  color: var(--text-muted); 
+  margin-bottom: 6px; 
+  cursor: default;
+  transition: color 0.2s ease; 
+}
+.statement-doc:hover { color: var(--accent); }
 .statement-text {
   font-size: 0.82rem;
   color: var(--text-secondary);
@@ -1931,6 +1964,13 @@ h1, h2, h3, h4 {
   color: var(--accent-light);
   font-weight: 500;
   border: 1px solid var(--accent-border);
+  cursor: default;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.trend-doc-tag:hover {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  transform: translateY(-1px);
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -2004,13 +2044,14 @@ h1, h2, h3, h4 {
   border-radius: var(--radius);
   border: 1px solid var(--border-subtle);
   margin-bottom: 6px;
-  transition: var(--transition);
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   animation: fade-up 0.2s ease;
   background: var(--bg-elevated);
 }
 .citation-item:hover {
   border-color: var(--accent-border);
   background: var(--accent-surface);
+  transform: translateX(3px);
 }
 .citation-source {
   display: flex;

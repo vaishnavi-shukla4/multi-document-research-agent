@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import React, { useRef, useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 
 const FileIcon = () => (
@@ -71,11 +71,33 @@ export default function Sidebar({
   loading,
 }) {
   const fileRef = useRef(null);
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const handleFiles = (e) => {
     const files = e.target.files;
     if (files.length) onUpload(Array.from(files));
     e.target.value = "";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length) {
+      // Filter for PDF only
+      const pdfFiles = Array.from(files).filter(f => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+      if (pdfFiles.length) onUpload(pdfFiles);
+    }
   };
 
   return (
@@ -90,7 +112,12 @@ export default function Sidebar({
       </div>
 
       {/* Documents */}
-      <div className="sidebar-section">
+      <div 
+        className={`sidebar-section ${isDragging ? 'drag-active' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <div className="sidebar-section-header">
           <span className="sidebar-section-label">Documents</span>
           {documents.length > 0 && (
@@ -138,12 +165,12 @@ export default function Sidebar({
           {uploading ? (
             <>
               <span className="upload-spinner" aria-hidden="true" />
-              Uploading…
+              Processing…
             </>
           ) : (
             <>
               <UploadIcon />
-              Add documents
+              {isDragging ? "Drop PDFs here" : "Add documents"}
             </>
           )}
         </button>
