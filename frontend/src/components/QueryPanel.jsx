@@ -27,6 +27,7 @@ export default function QueryPanel({
   detailMode,
   onToggleMode,
   hasDocuments,
+  conversationMessages = [],
 }) {
   const [question, setQuestion] = useState("");
   const [showWhy, setShowWhy] = useState(false);
@@ -40,6 +41,32 @@ export default function QueryPanel({
 
   return (
     <main className="query-panel">
+      {conversationMessages.length > 0 && (
+        <div className="response-card" role="region" aria-label="Conversation history" style={{ marginBottom: "16px" }}>
+          <div className="response-label">Conversation</div>
+          <div className="response-answer" style={{ display: "grid", gap: "12px" }}>
+            {conversationMessages.slice(-4).map((message, index) => (
+              <div
+                key={message.id || index}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "4px" }}>
+                  {message.role}
+                </div>
+                <div style={{ fontSize: "0.92rem", color: "var(--text-primary)" }}>
+                  {message.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="query-input-area">
         <form className="query-form" onSubmit={handleSubmit}>

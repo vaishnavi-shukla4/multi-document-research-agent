@@ -12,11 +12,15 @@ import {
   uploadDocuments,
   getDocuments,
   deleteDocument,
-  queryDocuments,
+  createConversation,
+  getConversationMessages,
+  sendConversationMessage,
   compareDocuments,
   findContradictions,
   summarizeTrends,
 } from "../api";
+
+const CONVERSATION_STORAGE_KEY = "ra-conversation-id";
 
 export default function ProtectedApp({ onLogout }) {
   const [documents, setDocuments] = useState([]);
@@ -28,6 +32,55 @@ export default function ProtectedApp({ onLogout }) {
   const [error, setError] = useState(null);
   const [detailMode, setDetailMode] = useState("detailed");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [conversationMessages, setConversationMessages] = useState([]);
+
+  const persistConversationId = useCallback((value) => {
+    setConversationId(value);
+    try {
+      localStorage.setItem(CONVERSATION_STORAGE_KEY, value);
+    } catch {
+      // Ignore storage failures and keep the in-memory id.
+    }
+  }, []);
+
+  const loadConversationMessages = useCallback(async (id) => {
+    const data = await getConversationMessages(id);
+    setConversationMessages(data.messages || []);
+  }, []);
+
+  const ensureConversation = useCallback(async () => {
+    if (conversationId) {
+      return conversationId;
+    }
+
+    let storedId = null;
+    try {
+      storedId = localStorage.getItem(CONVERSATION_STORAGE_KEY);
+    } catch {
+      storedId = null;
+    }
+
+    if (storedId) {
+      try {
+        await loadConversationMessages(storedId);
+        setConversationId(storedId);
+        return storedId;
+      } catch {
+        try {
+          localStorage.removeItem(CONVERSATION_STORAGE_KEY);
+        } catch {
+          // Ignore storage cleanup failures.
+        }
+      }
+    }
+
+    const created = await createConversation();
+    const newConversationId = created.conversation_id;
+    persistConversationId(newConversationId);
+    setConversationMessages([]);
+    return newConversationId;
+  }, [conversationId, loadConversationMessages, persistConversationId]);
 
   const fetchDocs = useCallback(async () => {
     try {
@@ -39,6 +92,27 @@ export default function ProtectedApp({ onLogout }) {
   }, []);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const activeConversationId = await ensureConversation();
+        if (!cancelled && activeConversationId) {
+          await loadConversationMessages(activeConversationId);
+        }
+      } catch {
+        if (!cancelled) {
+          setConversationMessages([]);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureConversation, loadConversationMessages]);
 
   const handleUpload = async (files) => {
     setUploading(true);
@@ -70,9 +144,11 @@ export default function ProtectedApp({ onLogout }) {
     setCitations([]);
     setSidebarOpen(false);
     try {
-      const data = await queryDocuments(question, detailMode);
+      const activeConversationId = await ensureConversation();
+      const data = await sendConversationMessage(activeConversationId, question, detailMode);
       setResponse(data);
       setCitations(data.citations || []);
+      await loadConversationMessages(activeConversationId);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -195,6 +271,7 @@ export default function ProtectedApp({ onLogout }) {
             detailMode={detailMode}
             onToggleMode={toggleMode}
             hasDocuments={documents.length > 0}
+            conversationMessages={conversationMessages}
           />
           <CitationPanel citations={citations} />
         </div>

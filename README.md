@@ -10,6 +10,7 @@ An AI-powered full-stack web application for deep cross-document analysis of res
 
 - 📄 **Multi-PDF Upload** — Upload and manage multiple research papers simultaneously
 - 🔍 **Cross-Document Q&A** — Ask questions across all uploaded documents with page-level citations
+- 💬 **Stateful Follow-Ups** — Persist conversation history so pronoun and meta follow-ups work across refreshes
 - ⚖️ **Contradiction Detection** — Automatically identifies conflicting statements between papers
 - 📊 **Trend Summarization** — Surfaces common themes and patterns across documents
 - 🔄 **Document Comparison** — Side-by-side analysis of key ideas across sources
@@ -25,8 +26,8 @@ An AI-powered full-stack web application for deep cross-document analysis of res
 | Frontend | React 19 + Vite |
 | Backend | Python + FastAPI |
 | LLM | Groq — LLaMA 3.3 70B |
-| Embeddings | Google Gemini (`gemini-embedding-001`, 1536-dim) |
-| Vector Search | NumPy (in-memory cosine similarity) |
+| Embeddings | Google Gemini (`gemini-embedding-001`, 3072-dim) |
+| Vector Search | Supabase Postgres + pgvector |
 | PDF Parsing | PyPDF2 |
 | Deployment | Vercel (frontend) + Render (backend) |
 
@@ -41,11 +42,11 @@ pdf_utils.py     →  page-by-page text extraction
     ↓
 chunker.py       →  sentence-aware chunks (800 chars, 200 overlap)
     ↓
-vector_store.py  →  Gemini embeddings → normalized NumPy float32 vectors
+vector_store.py  →  Gemini embeddings → Supabase pgvector rows
     ↓
 User Query
     ↓
-vector_store.py  →  embed query → cosine similarity → top-k chunks
+vector_store.py  →  embed query → pgvector cosine similarity → top-k chunks
     ↓
 ai_engine.py     →  build prompt → Groq LLaMA 3.3 70B → structured JSON
     ↓
@@ -77,7 +78,11 @@ Create a `.env` file in `/backend`:
 ```env
 GROQ_API_KEY=your_groq_api_key
 GEMINI_API_KEY=your_gemini_api_key
+DATABASE_URL=your_supabase_database_url
+SUPABASE_URL=your_supabase_project_url
 ```
+
+Run the schema migration in [backend/supabase_schema.sql](backend/supabase_schema.sql) before uploading documents.
 
 ```bash
 uvicorn main:app --reload --port 8000
@@ -102,6 +107,9 @@ npm run dev   # → http://localhost:5173
 | `GET` | `/documents` | List all uploaded documents |
 | `DELETE` | `/documents/{doc_name}` | Remove a document and rebuild index |
 | `POST` | `/query` | Q&A with citations and confidence score |
+| `POST` | `/conversations` | Create a persisted conversation |
+| `GET` | `/conversations/{id}/messages` | Load conversation history |
+| `POST` | `/conversations/{id}/messages` | Ask a stateful follow-up |
 | `POST` | `/compare` | Cross-document comparison |
 | `POST` | `/contradictions` | Detect conflicting statements |
 | `POST` | `/trends` | Identify common themes |
@@ -123,10 +131,10 @@ npm run dev   # → http://localhost:5173
 
 ## Known Limitations
 
-- **No persistence** — Restarting the backend clears all uploaded documents (in-memory only)
+- **Database migration required** — Supabase must have the pgvector, documents, chunks, conversations, and messages tables before uploads work
 - **Scanned PDFs** — PyPDF2 extracts digital text only; scanned/image PDFs are not supported
 - **Rate limits** — Gemini free tier requires a 4-second delay between embedding batches
-- **No auth** — CORS is open; not production-hardened
+- **Auth required** — The backend expects a valid Supabase JWT for protected routes
 
 ---
 

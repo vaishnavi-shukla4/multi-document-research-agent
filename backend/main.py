@@ -5,7 +5,7 @@ Multi-Document Research Agent — FastAPI Backend
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ load_dotenv()
 from pdf_utils import extract_text_from_pdf
 from chunker import chunk_pages
 from vector_store import store
-from ai_engine import answer_query, compare_documents, detect_contradictions, summarize_trends
+from ai_engine import answer_query, answer_query_stateful, compare_documents, detect_contradictions, summarize_trends
 from auth import get_current_user
 
 app = FastAPI(
@@ -45,6 +45,16 @@ class QueryRequest(BaseModel):
     question: str
     detail_mode: str = "detailed"  # "simple" | "detailed"
     top_k: int = 10
+    conversation_id: Optional[str] = None
+
+
+class CreateConversationRequest(BaseModel):
+    title: Optional[str] = None
+
+
+class ConversationMessageRequest(BaseModel):
+    question: str
+    detail_mode: str = "detailed"
 
 
 # ── Public Endpoints ───────────────────────────────────────────────────
@@ -126,13 +136,48 @@ def query_documents(
     if not store.get_documents(user_id):
         raise HTTPException(status_code=400, detail="No documents uploaded yet")
 
+    if req.conversation_id:
+        if not store.conversation_exists(req.conversation_id, user_id):
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return answer_query_stateful(req.conversation_id, user_id, req.question, detail_mode=req.detail_mode)
+
     context_chunks = store.search(req.question, user_id, top_k=req.top_k)
     result = answer_query(req.question, context_chunks, detail_mode=req.detail_mode)
     return result
 
 
+@app.post("/conversations")
+def create_conversation(
+    req: CreateConversationRequest,
+    user_id: str = Depends(get_current_user),
+):
+    conversation_id = store.create_conversation(user_id, title=req.title)
+    return {"conversation_id": conversation_id}
+
+
+@app.post("/conversations/{conversation_id}/messages")
+def send_conversation_message(
+    conversation_id: str,
+    req: ConversationMessageRequest,
+    user_id: str = Depends(get_current_user),
+):
+    if not store.conversation_exists(conversation_id, user_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return answer_query_stateful(conversation_id, user_id, req.question, detail_mode=req.detail_mode)
+
+
+@app.get("/conversations/{conversation_id}/messages")
+def get_conversation_messages(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    if not store.conversation_exists(conversation_id, user_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"conversation_id": conversation_id, "messages": store.get_recent_messages(conversation_id, user_id, limit=100)}
+
+
 @app.post("/compare")
-def compare(user_id: str = Depends(get_current_user)):
+def compare(detail_mode: str = "detailed", user_id: str = Depends(get_current_user)):
     """Compare key ideas across the user's uploaded documents."""
     docs = store.get_documents(user_id)
     if len(docs) < 2:
@@ -142,11 +187,11 @@ def compare(user_id: str = Depends(get_current_user)):
         doc["name"]: store.get_all_chunks_for_doc(doc["name"], user_id)
         for doc in docs
     }
-    return compare_documents(doc_chunks)
+    return compare_documents(doc_chunks, detail_mode=detail_mode)
 
 
 @app.post("/contradictions")
-def find_contradictions(user_id: str = Depends(get_current_user)):
+def find_contradictions(detail_mode: str = "detailed", user_id: str = Depends(get_current_user)):
     """Detect contradictions between the user's uploaded documents."""
     docs = store.get_documents(user_id)
     if len(docs) < 2:
@@ -156,11 +201,11 @@ def find_contradictions(user_id: str = Depends(get_current_user)):
         doc["name"]: store.get_all_chunks_for_doc(doc["name"], user_id)
         for doc in docs
     }
-    return detect_contradictions(doc_chunks)
+    return detect_contradictions(doc_chunks, detail_mode=detail_mode)
 
 
 @app.post("/trends")
-def find_trends(user_id: str = Depends(get_current_user)):
+def find_trends(detail_mode: str = "detailed", user_id: str = Depends(get_current_user)):
     """Identify common themes and trends across the user's documents."""
     docs = store.get_documents(user_id)
     if not docs:
@@ -170,7 +215,7 @@ def find_trends(user_id: str = Depends(get_current_user)):
         doc["name"]: store.get_all_chunks_for_doc(doc["name"], user_id)
         for doc in docs
     }
-    return summarize_trends(doc_chunks)
+    return summarize_trends(doc_chunks, detail_mode=detail_mode)
 
 
 if __name__ == "__main__":

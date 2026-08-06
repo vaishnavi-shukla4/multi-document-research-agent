@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
@@ -10,7 +11,11 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem('ra-theme', theme); } catch {}
+    try {
+      localStorage.setItem('ra-theme', theme);
+    } catch (err) {
+      console.warn("Failed to save theme to localStorage", err);
+    }
   }, [theme]);
 
   const toggle = () => setTheme(t => t === 'light' ? 'dark' : 'light');

@@ -51,6 +51,43 @@ export async function deleteDocument(docName) {
   return res.json();
 }
 
+export async function createConversation(title = null) {
+  const res = await fetch(`${API_BASE}/conversations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Conversation creation failed");
+  }
+  return res.json();
+}
+
+export async function getConversationMessages(conversationId) {
+  const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`, {
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Failed to load conversation history");
+  }
+  return res.json();
+}
+
+export async function sendConversationMessage(conversationId, question, detailMode = "detailed") {
+  const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+    body: JSON.stringify({ question, detail_mode: detailMode }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Conversation query failed");
+  }
+  return res.json();
+}
+
 export async function queryDocuments(question, detailMode = "detailed", topK = 10) {
   const res = await fetch(`${API_BASE}/query`, {
     method: "POST",
