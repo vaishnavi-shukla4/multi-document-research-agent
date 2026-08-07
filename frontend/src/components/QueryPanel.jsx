@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /* ── Icon helpers ──────────────────────────────────────────────── */
 const SendIcon = () => (
@@ -30,52 +30,134 @@ export default function QueryPanel({
   conversationMessages = [],
 }) {
   const [question, setQuestion] = useState("");
-  const [showWhy, setShowWhy] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversationMessages, response, loading]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (question.trim()) {
+    if (question.trim() && !loading) {
       onSubmitQuery(question.trim());
+      setQuestion("");
     }
   };
 
+  const hasContent = conversationMessages.length > 0;
+
   return (
     <main className="query-panel">
-      {conversationMessages.length > 0 && (
-        <div className="response-card" role="region" aria-label="Conversation history" style={{ marginBottom: "16px" }}>
-          <div className="response-label">Conversation</div>
-          <div className="response-answer" style={{ display: "grid", gap: "12px" }}>
-            {conversationMessages.slice(-4).map((message, index) => (
-              <div
-                key={message.id || index}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border-subtle)",
-                }}
-              >
-                <div style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: "4px" }}>
-                  {message.role}
+      {/* ── Scrollable message area ─────────────────────────────── */}
+      <div className="chat-messages">
+        {!hasContent && !loading && !error && !response && (
+          <div className="empty-state">
+            {!hasDocuments ? (
+              <>
+                <div className="empty-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="18" x2="12" y2="12"/>
+                    <line x1="9" y1="15" x2="15" y2="15"/>
+                  </svg>
                 </div>
-                <div style={{ fontSize: "0.92rem", color: "var(--text-primary)" }}>
-                  {message.content}
+                <p className="empty-title">Start by uploading documents</p>
+                <p className="empty-sub">Upload PDF files using the sidebar, then ask questions across your collection.</p>
+              </>
+            ) : (
+              <>
+                <div className="empty-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
                 </div>
-              </div>
-            ))}
+                <p className="empty-title">Ask a question</p>
+                <p className="empty-sub">Type your question below, or use the analysis tools in the sidebar to compare documents, find contradictions, or discover trends.</p>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Input Area */}
+        {/* Conversation message history */}
+        {hasContent && conversationMessages.map((msg, index) => (
+          <div
+            key={msg.id || index}
+            className={`chat-message chat-message-${msg.role}`}
+          >
+            <div className="chat-message-role">
+              {msg.role === "user" ? "You" : "ResearchAgent"}
+            </div>
+            <div className="chat-message-content">{msg.content}</div>
+          </div>
+        ))}
+
+        {/* Loading indicator inline in message list */}
+        {loading && (
+          <div className="chat-message chat-message-assistant">
+            <div className="chat-message-role">ResearchAgent</div>
+            <div className="loading">
+              <div className="loading-dots" aria-hidden="true">
+                <span/><span/><span/>
+              </div>
+              <div className="loading-text">
+                {responseType === "query" && "Searching documents and composing an answer…"}
+                {responseType === "compare" && "Comparing documents across key topics…"}
+                {responseType === "contradictions" && "Scanning for conflicting claims…"}
+                {responseType === "trends" && "Identifying recurring themes and patterns…"}
+                {!responseType && "Processing…"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Inline error */}
+        {error && (
+          <div className="error-msg" role="alert">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {error}
+          </div>
+        )}
+
+        {/* Analysis results (compare, contradictions, trends) shown inline after messages */}
+        {!loading && !error && response && responseType === "compare" && (
+          <div className="response-area response-area-inline">
+            <CompareResponse response={response} />
+          </div>
+        )}
+        {!loading && !error && response && responseType === "contradictions" && (
+          <div className="response-area response-area-inline">
+            <ContradictionResponse response={response} />
+          </div>
+        )}
+        {!loading && !error && response && responseType === "trends" && (
+          <div className="response-area response-area-inline">
+            <TrendsResponse response={response} />
+          </div>
+        )}
+
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* ── Sticky composer at bottom — ALWAYS rendered ─────────── */}
       <div className="query-input-area">
         <form className="query-form" onSubmit={handleSubmit}>
           <textarea
             className="query-input"
-            placeholder="Ask a question across all your documents…"
+            placeholder={hasDocuments ? "Ask a question across all your documents…" : "Upload documents first to ask questions…"}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            disabled={loading}
+            disabled={loading || !hasDocuments}
             rows={1}
             onInput={(e) => {
               e.target.style.height = 'auto';
@@ -84,14 +166,14 @@ export default function QueryPanel({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (question.trim()) handleSubmit(e);
+                if (question.trim() && !loading) handleSubmit(e);
               }
             }}
           />
           <button
             className="query-submit"
             type="submit"
-            disabled={loading || !question.trim()}
+            disabled={loading || !question.trim() || !hasDocuments}
             aria-label="Submit question"
           >
             {loading ? <span className="query-spinner" aria-hidden="true" /> : <SendIcon />}
@@ -120,88 +202,15 @@ export default function QueryPanel({
           </div>
         </div>
       </div>
-
-      {/* Response Area */}
-      <div className="response-area">
-        {loading && (
-          <div className="loading">
-            <div className="loading-dots" aria-hidden="true">
-              <span/><span/><span/>
-            </div>
-            <div className="loading-text">
-              {responseType === "query" && "Searching documents and composing an answer…"}
-              {responseType === "compare" && "Comparing documents across key topics…"}
-              {responseType === "contradictions" && "Scanning for conflicting claims…"}
-              {responseType === "trends" && "Identifying recurring themes and patterns…"}
-              {!responseType && "Processing…"}
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="error-msg" role="alert">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && !response && (
-          <div className="empty-state">
-            {!hasDocuments ? (
-              <>
-                <div className="empty-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="12" y1="18" x2="12" y2="12"/>
-                    <line x1="9" y1="15" x2="15" y2="15"/>
-                  </svg>
-                </div>
-                <p className="empty-title">Start by uploading documents</p>
-                <p className="empty-sub">Upload PDF files using the sidebar, then ask questions across your collection.</p>
-              </>
-            ) : (
-              <>
-                <div className="empty-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                </div>
-                <p className="empty-title">Ask a question</p>
-                <p className="empty-sub">Type a question above, or use the analysis tools in the sidebar to compare documents, find contradictions, or discover trends.</p>
-              </>
-            )}
-          </div>
-        )}
-
-        {!loading && !error && response && responseType === "query" && (
-          <QueryResponse response={response} showWhy={showWhy} setShowWhy={setShowWhy} />
-        )}
-        {!loading && !error && response && responseType === "compare" && (
-          <CompareResponse response={response} />
-        )}
-        {!loading && !error && response && responseType === "contradictions" && (
-          <ContradictionResponse response={response} />
-        )}
-        {!loading && !error && response && responseType === "trends" && (
-          <TrendsResponse response={response} />
-        )}
-      </div>
     </main>
   );
 }
 
+
 /* ── Sub-components ─────────────────────────────────────────────── */
 
-function QueryResponse({ response, showWhy, setShowWhy }) {
+function QueryResponse({ response }) {
+  const [showWhy, setShowWhy] = useState(false);
   const score = response.confidence_score ?? 0;
   const pct = Math.round(score * 100);
   const level = score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";

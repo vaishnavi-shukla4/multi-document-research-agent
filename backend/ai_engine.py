@@ -190,6 +190,14 @@ Respond with only the rewritten question, no explanation."""
 
 def answer_query_stateful(conversation_id: str, user_id: str, question: str, detail_mode: str = "detailed") -> Dict:
     history = store.get_recent_messages(conversation_id, user_id, limit=6)
+
+    if not history:
+        words = question.split()
+        title = " ".join(words[:5])
+        if len(words) > 5:
+            title += "..."
+        store.update_conversation_title(conversation_id, user_id, title)
+
     last_assistant_msg = next((m for m in reversed(history) if m["role"] == "assistant"), None)
 
     chunks = []

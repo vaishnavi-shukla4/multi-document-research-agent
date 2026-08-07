@@ -294,6 +294,52 @@ class VectorStore:
         finally:
             session.close()
 
+    def get_conversations(self, user_id: str) -> List[Dict]:
+        session = _get_session()
+        try:
+            rows = session.execute(
+                text(
+                    """
+                    SELECT id, title, created_at
+                    FROM conversations
+                    WHERE user_id = :uid
+                    ORDER BY created_at DESC
+                    """
+                ),
+                {"uid": user_id},
+            ).fetchall()
+            return [
+                {
+                    "id": str(r.id),
+                    "title": r.title or "New conversation",
+                    "created_at": r.created_at.isoformat() if r.created_at else None,
+                }
+                for r in rows
+            ]
+        finally:
+            session.close()
+
+    def update_conversation_title(self, conversation_id: str, user_id: str, title: str) -> bool:
+        session = _get_session()
+        try:
+            session.execute(
+                text(
+                    """
+                    UPDATE conversations
+                    SET title = :title
+                    WHERE id = :conversation_id AND user_id = :uid
+                    """
+                ),
+                {"title": title, "conversation_id": conversation_id, "uid": user_id},
+            )
+            session.commit()
+            return True
+        except Exception:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
     def get_recent_messages(self, conversation_id: str, user_id: str, limit: int = 6) -> List[Dict]:
         session = _get_session()
         try:

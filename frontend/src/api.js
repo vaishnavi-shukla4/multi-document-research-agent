@@ -51,6 +51,17 @@ export async function deleteDocument(docName) {
   return res.json();
 }
 
+export async function getConversations() {
+  const res = await fetch(`${API_BASE}/conversations`, {
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Failed to load conversations");
+  }
+  return res.json();
+}
+
 export async function createConversation(title = null) {
   const res = await fetch(`${API_BASE}/conversations`, {
     method: "POST",

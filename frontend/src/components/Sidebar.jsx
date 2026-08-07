@@ -59,14 +59,25 @@ const RemoveIcon = () => (
   </svg>
 );
 
+const ChatIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+  </svg>
+);
+
 export default function Sidebar({
   documents,
+  conversations = [],
+  activeConversationId,
   onUpload,
   onRemove,
   onCompare,
   onContradictions,
   onTrends,
   onLogout,
+  onSelectConversation,
+  onNewConversation,
   uploading,
   loading,
 }) {
@@ -183,6 +194,43 @@ export default function Sidebar({
           onChange={handleFiles}
           aria-hidden="true"
         />
+      </div>
+
+      {/* Conversations */}
+      <div className="sidebar-section">
+        <div className="sidebar-section-header">
+          <span className="sidebar-section-label">Conversations</span>
+          <button 
+            className="new-chat-btn" 
+            onClick={onNewConversation}
+            title="New Conversation"
+          >
+            + New
+          </button>
+        </div>
+        <div className="doc-list">
+          {conversations.length === 0 ? (
+            <div className="doc-empty">
+              <p>No conversations.</p>
+            </div>
+          ) : (
+            conversations.map((conv) => (
+              <div 
+                key={conv.id} 
+                className={`doc-item conversation-item ${activeConversationId === conv.id ? 'active' : ''}`}
+                onClick={() => onSelectConversation(conv.id)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="doc-icon">
+                  <ChatIcon />
+                </div>
+                <div className="doc-info">
+                  <div className="doc-name" title={conv.title}>{conv.title}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Analysis */}

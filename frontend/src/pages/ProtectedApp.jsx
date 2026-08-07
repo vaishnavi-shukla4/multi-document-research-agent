@@ -13,6 +13,7 @@ import {
   getDocuments,
   deleteDocument,
   createConversation,
+  getConversations,
   getConversationMessages,
   sendConversationMessage,
   compareDocuments,
@@ -33,6 +34,7 @@ export default function ProtectedApp({ onLogout }) {
   const [detailMode, setDetailMode] = useState("detailed");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [conversations, setConversations] = useState([]);
   const [conversationMessages, setConversationMessages] = useState([]);
 
   const persistConversationId = useCallback((value) => {
@@ -40,7 +42,7 @@ export default function ProtectedApp({ onLogout }) {
     try {
       localStorage.setItem(CONVERSATION_STORAGE_KEY, value);
     } catch {
-      // Ignore storage failures and keep the in-memory id.
+      // Ignore storage failures
     }
   }, []);
 
@@ -49,10 +51,17 @@ export default function ProtectedApp({ onLogout }) {
     setConversationMessages(data.messages || []);
   }, []);
 
-  const ensureConversation = useCallback(async () => {
-    if (conversationId) {
-      return conversationId;
+  const fetchConversationsList = useCallback(async () => {
+    try {
+      const data = await getConversations();
+      setConversations(data.conversations || []);
+    } catch {
+      // API might be down
     }
+  }, []);
+
+  const ensureConversation = useCallback(async () => {
+    if (conversationId) return conversationId;
 
     let storedId = null;
     try {
@@ -64,14 +73,10 @@ export default function ProtectedApp({ onLogout }) {
     if (storedId) {
       try {
         await loadConversationMessages(storedId);
-        setConversationId(storedId);
+        persistConversationId(storedId);
         return storedId;
       } catch {
-        try {
-          localStorage.removeItem(CONVERSATION_STORAGE_KEY);
-        } catch {
-          // Ignore storage cleanup failures.
-        }
+        try { localStorage.removeItem(CONVERSATION_STORAGE_KEY); } catch { /* ignore */ }
       }
     }
 
@@ -79,8 +84,9 @@ export default function ProtectedApp({ onLogout }) {
     const newConversationId = created.conversation_id;
     persistConversationId(newConversationId);
     setConversationMessages([]);
+    await fetchConversationsList();
     return newConversationId;
-  }, [conversationId, loadConversationMessages, persistConversationId]);
+  }, [conversationId, loadConversationMessages, persistConversationId, fetchConversationsList]);
 
   const fetchDocs = useCallback(async () => {
     try {
@@ -91,11 +97,13 @@ export default function ProtectedApp({ onLogout }) {
     }
   }, []);
 
-  useEffect(() => { fetchDocs(); }, [fetchDocs]);
+  useEffect(() => { 
+    fetchDocs(); 
+    fetchConversationsList();
+  }, [fetchDocs, fetchConversationsList]);
 
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       try {
         const activeConversationId = await ensureConversation();
@@ -103,16 +111,37 @@ export default function ProtectedApp({ onLogout }) {
           await loadConversationMessages(activeConversationId);
         }
       } catch {
-        if (!cancelled) {
-          setConversationMessages([]);
-        }
+        if (!cancelled) setConversationMessages([]);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [ensureConversation, loadConversationMessages]);
+
+  const handleSelectConversation = async (id) => {
+    persistConversationId(id);
+    setResponse(null);
+    setResponseType(null);
+    setCitations([]);
+    try {
+      await loadConversationMessages(id);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleNewConversation = async () => {
+    try {
+      const created = await createConversation();
+      persistConversationId(created.conversation_id);
+      setConversationMessages([]);
+      setResponse(null);
+      setResponseType(null);
+      setCitations([]);
+      await fetchConversationsList();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleUpload = async (files) => {
     setUploading(true);
@@ -149,6 +178,7 @@ export default function ProtectedApp({ onLogout }) {
       setResponse(data);
       setCitations(data.citations || []);
       await loadConversationMessages(activeConversationId);
+      await fetchConversationsList();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -232,12 +262,16 @@ export default function ProtectedApp({ onLogout }) {
 
       <Sidebar
         documents={documents}
+        conversations={conversations}
+        activeConversationId={conversationId}
         onUpload={handleUpload}
         onRemove={handleRemove}
         onCompare={handleCompare}
         onContradictions={handleContradictions}
         onTrends={handleTrends}
         onLogout={onLogout}
+        onSelectConversation={handleSelectConversation}
+        onNewConversation={handleNewConversation}
         uploading={uploading}
         loading={loading}
         isOpen={sidebarOpen}

@@ -146,6 +146,13 @@ def query_documents(
     return result
 
 
+@app.get("/conversations")
+def list_conversations(
+    user_id: str = Depends(get_current_user),
+):
+    return {"conversations": store.get_conversations(user_id)}
+
+
 @app.post("/conversations")
 def create_conversation(
     req: CreateConversationRequest,
