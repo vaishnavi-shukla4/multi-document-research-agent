@@ -1006,7 +1006,7 @@ h1, h2, h3, h4 {
   padding: 34px 28px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  background: linear-gradient(180deg, rgba(253, 250, 246, 0.9), rgba(255, 255, 255, 0.76));
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-surface));
   box-shadow: var(--shadow-sm);
 }
 .l-cta-inner:hover {
@@ -1028,6 +1028,13 @@ h1, h2, h3, h4 {
   color: var(--text-secondary);
   margin-bottom: 32px;
 }
+
+[data-theme="dark"] .l-cta-inner {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--accent-border);
+  box-shadow: var(--shadow-md);
+}
+
 
 /* ── Footer ────────────────────────────────────────────────────── */
 .l-footer {
