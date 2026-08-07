@@ -344,11 +344,18 @@ class VectorStore:
         session = _get_session()
         try:
             result = session.execute(
-                text("DELETE FROM conversations WHERE id = :conversation_id AND user_id = :uid"),
-                {"conversation_id": conversation_id, "uid": user_id}
+                text(
+                    """
+                    DELETE FROM conversations
+                    WHERE id = :conversation_id AND user_id = :uid
+                    RETURNING id
+                    """
+                ),
+                {"conversation_id": conversation_id, "uid": user_id},
             )
+            deleted_id = result.scalar_one_or_none()
             session.commit()
-            return result.rowcount > 0
+            return deleted_id is not None
         except Exception:
             session.rollback()
             raise

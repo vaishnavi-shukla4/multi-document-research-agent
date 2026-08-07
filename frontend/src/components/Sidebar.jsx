@@ -232,11 +232,24 @@ export default function Sidebar({
                       <div className="delete-confirm-title">Delete conversation?</div>
                       <div className="delete-confirm-text">This conversation and its messages will be permanently deleted.</div>
                       <div className="delete-confirm-actions">
-                        <button className="confirm-btn cancel" onClick={() => setDeleteConfirmId(null)}>Cancel</button>
-                        <button className="confirm-btn delete" onClick={() => {
-                          onDeleteConversation(conv.id);
-                          setDeleteConfirmId(null);
-                        }}>Delete</button>
+                        <button type="button" className="confirm-btn cancel" onClick={() => setDeleteConfirmId(null)}>Cancel</button>
+                        <button
+                          type="button"
+                          className="confirm-btn delete"
+                          onClick={async () => {
+                            try {
+                              await onDeleteConversation(conv.id);
+                              setDeleteConfirmId(null);
+                            } catch (err) {
+                              console.error("Delete conversation action failed", {
+                                conversationId: conv.id,
+                                error: err,
+                              });
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -257,6 +270,7 @@ export default function Sidebar({
                   </div>
                   <button
                     className="doc-remove"
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setDeleteConfirmId(conv.id);

@@ -16,6 +16,23 @@ async function authHeader() {
   return { Authorization: `Bearer ${session.access_token}` };
 }
 
+async function readErrorBody(res) {
+  const rawBody = await res.text();
+  if (!rawBody) {
+    return "";
+  }
+
+  try {
+    const parsed = JSON.parse(rawBody);
+    if (typeof parsed === "string") {
+      return parsed;
+    }
+    return parsed.detail || parsed.message || rawBody;
+  } catch {
+    return rawBody;
+  }
+}
+
 export async function uploadDocuments(files) {
   const formData = new FormData();
   for (const file of files) {
@@ -76,13 +93,21 @@ export async function createConversation(title = null) {
 }
 
 export async function deleteConversation(conversationId) {
-  const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}`, {
+  const url = `${API_BASE}/conversations/${encodeURIComponent(conversationId)}`;
+  const res = await fetch(url, {
     method: "DELETE",
     headers: { ...(await authHeader()) },
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || "Conversation deletion failed");
+    const errorBody = await readErrorBody(res);
+    console.error("Conversation deletion failed", {
+      conversationId,
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      body: errorBody,
+    });
+    throw new Error(errorBody || `Conversation deletion failed (${res.status})`);
   }
   return res.json();
 }

@@ -56,8 +56,10 @@ export default function ProtectedApp({ onLogout }) {
     try {
       const data = await getConversations();
       setConversations(data.conversations || []);
+      return data.conversations || [];
     } catch {
       // API might be down
+      return null;
     }
   }, []);
 
@@ -145,20 +147,23 @@ export default function ProtectedApp({ onLogout }) {
   };
 
   const handleDeleteConversation = async (idToDelete) => {
+    setError(null);
     try {
       await deleteConversation(idToDelete);
-      
-      const newConversations = conversations.filter(c => c.id !== idToDelete);
-      setConversations(newConversations);
+
+      const refreshedConversations = await fetchConversationsList();
+      const remainingConversations = Array.isArray(refreshedConversations)
+        ? refreshedConversations
+        : conversations.filter((c) => c.id !== idToDelete);
 
       if (idToDelete === conversationId) {
-        if (newConversations.length > 0) {
-          const nextId = newConversations[0].id;
-          persistConversationId(nextId);
+        if (remainingConversations.length > 0) {
+          const nextConversation = remainingConversations[0];
+          persistConversationId(nextConversation.id);
           setResponse(null);
           setResponseType(null);
           setCitations([]);
-          await loadConversationMessages(nextId);
+          await loadConversationMessages(nextConversation.id);
         } else {
           try { localStorage.removeItem(CONVERSATION_STORAGE_KEY); } catch { /* ignore */ }
           setConversationId(null);
@@ -167,9 +172,16 @@ export default function ProtectedApp({ onLogout }) {
           setResponseType(null);
           setCitations([]);
         }
+      } else {
+        setConversations(remainingConversations);
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Failed to delete conversation", {
+        conversationId: idToDelete,
+        error: err,
+      });
+      setError(err instanceof Error ? err.message : "Conversation deletion failed");
+      throw err;
     }
   };
 
