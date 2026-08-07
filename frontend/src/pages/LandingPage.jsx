@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useRef } from "react";
 import ThemeToggle from "../components/ThemeToggle";
 
 /* ── Product preview (hero visual) ─────────────────────────────── */
@@ -99,8 +100,35 @@ const HOW_STEPS = [
 
 /* ── Landing Page ──────────────────────────────────────────────── */
 export default function LandingPage() {
+  const landingRef = useRef(null);
+
+  const handlePointerMove = (event) => {
+    const element = landingRef.current;
+    if (!element) return;
+
+    const bounds = element.getBoundingClientRect();
+    const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+    const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+
+    element.style.setProperty("--landing-pointer-x", `${x}%`);
+    element.style.setProperty("--landing-pointer-y", `${y}%`);
+  };
+
+  const handlePointerLeave = () => {
+    const element = landingRef.current;
+    if (!element) return;
+
+    element.style.setProperty("--landing-pointer-x", "50%");
+    element.style.setProperty("--landing-pointer-y", "18%");
+  };
+
   return (
-    <div className="landing">
+    <div
+      ref={landingRef}
+      className="landing"
+      onMouseMove={handlePointerMove}
+      onMouseLeave={handlePointerLeave}
+    >
 
       {/* ── Navigation ──────────────────────────────────────────── */}
       <nav className="l-nav" role="navigation" aria-label="Main navigation">
