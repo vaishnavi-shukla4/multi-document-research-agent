@@ -14,6 +14,7 @@ import {
   deleteDocument,
   createConversation,
   getConversations,
+  deleteConversation,
   getConversationMessages,
   sendConversationMessage,
   compareDocuments,
@@ -138,6 +139,35 @@ export default function ProtectedApp({ onLogout }) {
       setResponseType(null);
       setCitations([]);
       await fetchConversationsList();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteConversation = async (idToDelete) => {
+    try {
+      await deleteConversation(idToDelete);
+      
+      const newConversations = conversations.filter(c => c.id !== idToDelete);
+      setConversations(newConversations);
+
+      if (idToDelete === conversationId) {
+        if (newConversations.length > 0) {
+          const nextId = newConversations[0].id;
+          persistConversationId(nextId);
+          setResponse(null);
+          setResponseType(null);
+          setCitations([]);
+          await loadConversationMessages(nextId);
+        } else {
+          try { localStorage.removeItem(CONVERSATION_STORAGE_KEY); } catch { /* ignore */ }
+          setConversationId(null);
+          setConversationMessages([]);
+          setResponse(null);
+          setResponseType(null);
+          setCitations([]);
+        }
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -272,6 +302,7 @@ export default function ProtectedApp({ onLogout }) {
         onLogout={onLogout}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onDeleteConversation={handleDeleteConversation}
         uploading={uploading}
         loading={loading}
         isOpen={sidebarOpen}

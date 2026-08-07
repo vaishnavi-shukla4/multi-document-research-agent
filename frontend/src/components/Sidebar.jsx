@@ -59,6 +59,14 @@ const RemoveIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
 const ChatIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -78,11 +86,13 @@ export default function Sidebar({
   onLogout,
   onSelectConversation,
   onNewConversation,
+  onDeleteConversation,
   uploading,
   loading,
 }) {
   const fileRef = useRef(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = React.useState(null);
 
   const handleFiles = (e) => {
     const files = e.target.files;
@@ -214,21 +224,51 @@ export default function Sidebar({
               <p>No conversations.</p>
             </div>
           ) : (
-            conversations.map((conv) => (
-              <div 
-                key={conv.id} 
-                className={`doc-item conversation-item ${activeConversationId === conv.id ? 'active' : ''}`}
-                onClick={() => onSelectConversation(conv.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="doc-icon">
-                  <ChatIcon />
+            conversations.map((conv) => {
+              if (deleteConfirmId === conv.id) {
+                return (
+                  <div key={conv.id} className="doc-item delete-confirm-item">
+                    <div className="delete-confirm-content">
+                      <div className="delete-confirm-title">Delete conversation?</div>
+                      <div className="delete-confirm-text">This conversation and its messages will be permanently deleted.</div>
+                      <div className="delete-confirm-actions">
+                        <button className="confirm-btn cancel" onClick={() => setDeleteConfirmId(null)}>Cancel</button>
+                        <button className="confirm-btn delete" onClick={() => {
+                          onDeleteConversation(conv.id);
+                          setDeleteConfirmId(null);
+                        }}>Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div 
+                  key={conv.id} 
+                  className={`doc-item conversation-item ${activeConversationId === conv.id ? 'active' : ''}`}
+                  onClick={() => onSelectConversation(conv.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="doc-icon">
+                    <ChatIcon />
+                  </div>
+                  <div className="doc-info">
+                    <div className="doc-name" title={conv.title}>{conv.title}</div>
+                  </div>
+                  <button
+                    className="doc-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteConfirmId(conv.id);
+                    }}
+                    title={`Delete ${conv.title}`}
+                    aria-label={`Delete ${conv.title}`}
+                  >
+                    <TrashIcon />
+                  </button>
                 </div>
-                <div className="doc-info">
-                  <div className="doc-name" title={conv.title}>{conv.title}</div>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

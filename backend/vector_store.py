@@ -340,6 +340,21 @@ class VectorStore:
         finally:
             session.close()
 
+    def delete_conversation(self, conversation_id: str, user_id: str) -> bool:
+        session = _get_session()
+        try:
+            result = session.execute(
+                text("DELETE FROM conversations WHERE id = :conversation_id AND user_id = :uid"),
+                {"conversation_id": conversation_id, "uid": user_id}
+            )
+            session.commit()
+            return result.rowcount > 0
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def get_recent_messages(self, conversation_id: str, user_id: str, limit: int = 6) -> List[Dict]:
         session = _get_session()
         try:

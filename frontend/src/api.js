@@ -75,6 +75,18 @@ export async function createConversation(title = null) {
   return res.json();
 }
 
+export async function deleteConversation(conversationId) {
+  const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}`, {
+    method: "DELETE",
+    headers: { ...(await authHeader()) },
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Conversation deletion failed");
+  }
+  return res.json();
+}
+
 export async function getConversationMessages(conversationId) {
   const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`, {
     headers: { "Content-Type": "application/json", ...(await authHeader()) },

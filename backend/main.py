@@ -162,6 +162,17 @@ def create_conversation(
     return {"conversation_id": conversation_id}
 
 
+@app.delete("/conversations/{conversation_id}")
+def delete_conversation(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    success = store.delete_conversation(conversation_id, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"success": True}
+
+
 @app.post("/conversations/{conversation_id}/messages")
 def send_conversation_message(
     conversation_id: str,

@@ -1392,6 +1392,67 @@ h1, h2, h3, h4 {
   color: var(--accent);
 }
 
+/* Delete confirm state */
+.delete-confirm-item {
+  background: var(--error-surface);
+  border: 1px solid var(--error-border, rgba(239, 68, 68, 0.2));
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 12px;
+  cursor: default;
+}
+.delete-confirm-item:hover {
+  background: var(--error-surface);
+  transform: none;
+}
+.delete-confirm-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.delete-confirm-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--error);
+}
+.delete-confirm-text {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.delete-confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.confirm-btn {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.confirm-btn.cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.confirm-btn.cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.confirm-btn.delete {
+  background: var(--error);
+  border: 1px solid var(--error);
+  color: white;
+}
+.confirm-btn.delete:hover {
+  background: #dc2626; /* darker red */
+}
+
 /* New conversation button */
 .new-chat-btn {
   font-size: 0.7rem;
